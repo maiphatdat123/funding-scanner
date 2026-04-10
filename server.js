@@ -496,8 +496,8 @@ app.get('/api/prices', (req, res) => {
 
 // ===================== START =====================
 
-const HOST = '0.0.0.0'; // Cho phép truy cập từ mọi thiết bị
-const LISTEN_PORT = process.env.PORT || PORT; // Cloud dùng env PORT
+const HOST = '0.0.0.0';
+const LISTEN_PORT = process.env.PORT || PORT;
 
 const server = app.listen(LISTEN_PORT, HOST, () => {
   console.log(`\n🚀 Funding Rate Arbitrage Scanner`);
@@ -510,4 +510,16 @@ const server = app.listen(LISTEN_PORT, HOST, () => {
   startBybitWS();
   backgroundFetch();
   setInterval(backgroundFetch, POLL_INTERVAL);
+
+  // ===== KEEP-ALIVE: Tự ping mỗi 10 phút để Render Free không ngủ =====
+  const RENDER_URL = process.env.RENDER_EXTERNAL_URL;
+  if (RENDER_URL) {
+    console.log(`🏓 Keep-alive: pinging ${RENDER_URL} every 10 min`);
+    setInterval(async () => {
+      try {
+        await fetch(`${RENDER_URL}/api/funding`);
+        console.log(`[${new Date().toLocaleTimeString()}] 🏓 Keep-alive ping OK`);
+      } catch {}
+    }, 10 * 60 * 1000); // 10 phút
+  }
 });
