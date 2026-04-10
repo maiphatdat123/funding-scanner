@@ -1,0 +1,15 @@
+{
+  "name": "funding-arbitrage-scanner",
+  "version": "1.0.0",
+  "description": "Funding Rate Arbitrage Scanner - Tìm chênh lệch funding giữa các sàn",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-fetch": "^2.7.0",
+    "ws": "^8.20.0"
+  }
+}

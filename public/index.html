@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Funding Rate Arbitrage Scanner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="header-left">
+        <div class="logo">
+          <span class="logo-icon">⚡</span>
+          <h1>Funding Arbitrage Scanner</h1>
+        </div>
+        <span class="badge">LIVE</span>
+      </div>
+      <div class="header-right">
+        <div class="config-group">
+          <label>Vốn ($)</label>
+          <input type="number" id="capitalInput" value="1000" min="100" step="100">
+        </div>
+        <div class="config-group">
+          <label>Leverage</label>
+          <select id="leverageSelect">
+            <option value="1">1x</option>
+            <option value="2">2x</option>
+            <option value="3" selected>3x</option>
+            <option value="5">5x</option>
+            <option value="10">10x</option>
+            <option value="20">20x</option>
+          </select>
+        </div>
+        <div class="config-group">
+          <label>Min Spread</label>
+          <select id="minSpreadSelect">
+            <option value="0">All</option>
+            <option value="0.01">0.01%</option>
+            <option value="0.05" selected>0.05%</option>
+            <option value="0.1">0.1%</option>
+            <option value="0.5">0.5%</option>
+            <option value="1">1%</option>
+          </select>
+        </div>
+        <div class="config-group">
+          <label>Slippage/bên</label>
+          <select id="slippageSelect">
+            <option value="0">0%</option>
+            <option value="0.02">0.02%</option>
+            <option value="0.05" selected>0.05%</option>
+            <option value="0.1">0.1%</option>
+            <option value="0.2">0.2%</option>
+            <option value="0.5">0.5%</option>
+          </select>
+        </div>
+        <div class="config-group">
+          <label>Refresh</label>
+          <select id="refreshSelect">
+            <option value="5" selected>5s ⚡</option>
+            <option value="10">10s</option>
+            <option value="15">15s</option>
+            <option value="30">30s</option>
+            <option value="0">Off</option>
+          </select>
+        </div>
+        <button class="btn-refresh" id="refreshBtn" onclick="fetchData()">
+          <span class="refresh-icon">🔄</span> Refresh
+        </button>
+      </div>
+    </header>
+
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="stat-label">Exchanges</div>
+        <div class="stat-value" id="statExchanges">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Pairs</div>
+        <div class="stat-value" id="statPairs">-</div>
+      </div>
+      <div class="stat-card glow-green">
+        <div class="stat-label">Best Spread</div>
+        <div class="stat-value" id="statBestSpread">-</div>
+      </div>
+      <div class="stat-card glow-gold">
+        <div class="stat-label">Best Net ROI/Day</div>
+        <div class="stat-value" id="statBestROI">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Updated</div>
+        <div class="stat-value" id="statLastUpdate">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Next</div>
+        <div class="stat-value" id="statCountdown">-</div>
+      </div>
+    </div>
+
+    <div class="exchange-status" id="exchangeStatus"></div>
+
+    <div class="filter-bar">
+      <div class="search-box">
+        <span>🔍</span>
+        <input type="text" id="searchInput" placeholder="Tìm coin...">
+      </div>
+      <div class="filter-buttons">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="positive">&gt;0.1%</button>
+        <button class="filter-btn" data-filter="high">&gt;0.5%</button>
+        <button class="filter-btn" data-filter="extreme">&gt;1%</button>
+      </div>
+      <select id="sortSelect" class="sort-select">
+        <option value="spread">Spread ↓</option>
+        <option value="apr">APR ↓</option>
+        <option value="symbol">A-Z</option>
+      </select>
+    </div>
+
+    <div class="table-container">
+      <table id="mainTable">
+        <thead>
+          <tr>
+            <th class="col-rank">#</th>
+            <th class="col-coin">Coin</th>
+            <th class="col-high">📈 FR Cao Nhất</th>
+            <th class="col-low">📉 FR Thấp Nhất</th>
+            <th class="col-spread">Spread</th>
+            <th class="col-prices">💱 Giá 2 Sàn</th>
+            <th class="col-fee">Phí</th>
+            <th class="col-strategy">Chiến Lược</th>
+            <th class="col-profit">Gross/8h</th>
+            <th class="col-profit">Gross/Day</th>
+            <th class="col-net">Net Day 1</th>
+            <th class="col-apr">APR</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr><td colspan="12" class="loading-cell">
+            <div class="loading-spinner"></div>
+            <p>Đang quét funding rates từ 7 sàn...</p>
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay" onclick="closeModal()">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <h2 id="modalTitle">-</h2>
+          <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body" id="modalBody"></div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      ⚠️ Tool chỉ mang tính tham khảo. Phí = Taker fee × 2 (vào + ra) cả 2 sàn. Kiểm tra thanh khoản trước khi giao dịch.
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
